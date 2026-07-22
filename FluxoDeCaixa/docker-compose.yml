@@ -1,0 +1,68 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: fluxo-caixa-postgres
+    environment:
+      POSTGRES_DB: fluxo_de_caixa
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_dados:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d fluxo_de_caixa"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: fluxo-caixa-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  migrations:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: migrations
+    container_name: fluxo-caixa-migrations
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__LivroRazao: Host=postgres;Port=5432;Database=fluxo_de_caixa;Username=postgres;Password=postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  livro-razao:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: runtime
+    container_name: livro-razao
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__LivroRazao: Host=postgres;Port=5432;Database=fluxo_de_caixa;Username=postgres;Password=postgres
+      RabbitMq__Host: rabbitmq
+      RabbitMq__Porta: 5672
+      RabbitMq__Usuario: guest
+      RabbitMq__Senha: guest
+    ports:
+      - "8080:8080"
+    depends_on:
+      migrations:
+        condition: service_completed_successfully
+      rabbitmq:
+        condition: service_healthy
+
+volumes:
+  postgres_dados:
