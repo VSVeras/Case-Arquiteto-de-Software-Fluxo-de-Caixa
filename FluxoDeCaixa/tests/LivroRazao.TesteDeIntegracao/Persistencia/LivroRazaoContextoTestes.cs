@@ -1,8 +1,8 @@
 using FluentAssertions;
 using LivroRazao.Dominio.Caixa;
-using LivroRazao.Infraestrutura.Excecoes;
+using LivroRazao.Infraestrutura.Excecao;
 using LivroRazao.Infraestrutura.Persistencia;
-using LivroRazao.Infraestrutura.Persistencia.Entidades.Outbox;
+using LivroRazao.Infraestrutura.Persistencia.Entidade.Outbox;
 using LivroRazao.Infraestrutura.Repositorio;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;

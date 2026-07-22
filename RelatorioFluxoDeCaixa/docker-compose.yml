@@ -1,0 +1,62 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: relatorio-fluxo-caixa-postgres
+    environment:
+      POSTGRES_DB: relatorio_fluxo_de_caixa
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - relatorio_postgres_dados:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d relatorio_fluxo_de_caixa"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  migrations:
+    image: postgres:16-alpine
+    container_name: relatorio-fluxo-caixa-migrations
+    environment:
+      PGPASSWORD: postgres
+    volumes:
+      - ./docker/migrations:/migrations:ro
+    command: >-
+      sh -c "psql -h postgres -U postgres -d relatorio_fluxo_de_caixa
+      -v ON_ERROR_STOP=1 -f /migrations/001_criar_estrutura_inicial.sql"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  consolidado-diario:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: consolidado-diario
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+
+      ConnectionStrings__ConsolidadoDiario: Host=postgres;Port=5432;Database=relatorio_fluxo_de_caixa;Username=postgres;Password=postgres
+
+      RabbitMq__Host: host.docker.internal
+      RabbitMq__Porta: 5672
+      RabbitMq__Usuario: guest
+      RabbitMq__Senha: guest
+      RabbitMq__VirtualHost: /
+      RabbitMq__Exchange: fluxocaixa.exchange
+      RabbitMq__RoutingKeyLancamentoCriado: fluxocaixa.lancamento.criado
+      RabbitMq__FilaLancamentoCriado: fluxocaixa.lancamento.criado
+
+    ports:
+      - "8081:8080"
+
+    depends_on:
+      migrations:
+        condition: service_completed_successfully
+
+volumes:
+  relatorio_postgres_dados:

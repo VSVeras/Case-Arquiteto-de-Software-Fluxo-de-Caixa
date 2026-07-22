@@ -1,5 +1,5 @@
 using FluentAssertions;
-using LivroRazao.Infraestrutura.Persistencia.Entidades.Outbox;
+using LivroRazao.Infraestrutura.Persistencia.Entidade.Outbox;
 using Xunit;
 
 namespace LivroRazao.TesteDeUnidade.Infraestrutura;

@@ -1,8 +1,8 @@
-using LivroRazao.Infraestrutura.Persistencia.Entidades.Outbox;
+using LivroRazao.Infraestrutura.Persistencia.Entidade.Outbox;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace LivroRazao.Infraestrutura.Persistencia.Configuracoes;
+namespace LivroRazao.Infraestrutura.Persistencia.Configuracao;
 
 public sealed class LancamentoOutboxConfiguracao : IEntityTypeConfiguration<LancamentoOutbox>
 {

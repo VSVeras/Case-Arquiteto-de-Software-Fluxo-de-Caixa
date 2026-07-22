@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>ConsolidadoDiario</RootNamespace>
+    <AssemblyName>ConsolidadoDiario</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Dapper" Version="2.1.66" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.10.0" />
+    <PackageReference Include="AspNetCore.HealthChecks.NpgSql" Version="8.0.2" />
+    <PackageReference Include="Npgsql" Version="8.0.6" />
+    <PackageReference Include="RabbitMQ.Client" Version="6.8.1" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.9.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Aplicacao\Abstracao\" />
+    <Folder Include="Aplicacao\Dto\" />
+    <Folder Include="Aplicacao\Servico\" />
+    <Folder Include="Aplicacao\Validacao\" />
+    <Folder Include="Infraestrutura\Excecao\" />
+    <Folder Include="Infraestrutura\Mensageria\" />
+    <Folder Include="Infraestrutura\Migracao\" />
+    <Folder Include="Infraestrutura\Repositorio\" />
+    <Folder Include="Infraestrutura\Worker\" />
+    <Folder Include="IoC\" />
+    <Folder Include="Rest\" />
+  </ItemGroup>
+
+</Project>

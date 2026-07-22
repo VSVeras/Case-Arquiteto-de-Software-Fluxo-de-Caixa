@@ -1,4 +1,4 @@
-namespace LivroRazao.Infraestrutura.Persistencia.Entidades.Outbox;
+namespace LivroRazao.Infraestrutura.Persistencia.Entidade.Outbox;
 
 public sealed class LancamentoOutbox
 {

@@ -4,8 +4,8 @@ using LivroRazao.Aplicacao.Abstracao;
 using LivroRazao.Aplicacao.Dto;
 using LivroRazao.Aplicacao.EventosDeIntegracao;
 using LivroRazao.Dominio.Caixa;
-using LivroRazao.Infraestrutura.Excecoes;
-using LivroRazao.Infraestrutura.Persistencia.Entidades.Outbox;
+using LivroRazao.Infraestrutura.Excecao;
+using LivroRazao.Infraestrutura.Persistencia.Entidade.Outbox;
 
 namespace LivroRazao.Aplicacao.Servico;
 

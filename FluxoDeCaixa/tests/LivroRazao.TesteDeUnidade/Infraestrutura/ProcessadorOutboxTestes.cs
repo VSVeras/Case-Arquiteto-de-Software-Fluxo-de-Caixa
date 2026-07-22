@@ -1,7 +1,7 @@
 using FluentAssertions;
 using LivroRazao.Aplicacao.Abstracao;
 using LivroRazao.Infraestrutura.Mensageria;
-using LivroRazao.Infraestrutura.Persistencia.Entidades.Outbox;
+using LivroRazao.Infraestrutura.Persistencia.Entidade.Outbox;
 using LivroRazao.Infraestrutura.Worker;
 using Microsoft.Extensions.Options;
 using Moq;

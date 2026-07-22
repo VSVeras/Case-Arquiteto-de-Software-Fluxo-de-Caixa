@@ -6,7 +6,7 @@ using FluentValidation.Results;
 using LivroRazao.Aplicacao.Dto;
 using LivroRazao.Aplicacao.Servico;
 using LivroRazao.Dominio.Caixa;
-using LivroRazao.Infraestrutura.Excecoes;
+using LivroRazao.Infraestrutura.Excecao;
 using LivroRazao.Infraestrutura.Mensageria;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;

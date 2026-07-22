@@ -1,4 +1,4 @@
-using LivroRazao.Infraestrutura.Excecoes;
+using LivroRazao.Infraestrutura.Excecao;
 using LivroRazao.IoC;
 using LivroRazao.Rest;
 

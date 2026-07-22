@@ -1,6 +1,6 @@
 using LivroRazao.Aplicacao.Abstracao;
 using LivroRazao.Infraestrutura.Persistencia;
-using LivroRazao.Infraestrutura.Persistencia.Entidades.Outbox;
+using LivroRazao.Infraestrutura.Persistencia.Entidade.Outbox;
 using Microsoft.EntityFrameworkCore;
 
 namespace LivroRazao.Infraestrutura.Repositorio;

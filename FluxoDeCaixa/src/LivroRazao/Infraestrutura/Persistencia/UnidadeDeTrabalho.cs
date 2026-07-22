@@ -1,5 +1,5 @@
 using LivroRazao.Aplicacao.Abstracao;
-using LivroRazao.Infraestrutura.Excecoes;
+using LivroRazao.Infraestrutura.Excecao;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 

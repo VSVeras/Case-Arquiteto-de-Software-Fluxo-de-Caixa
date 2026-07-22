@@ -4,7 +4,7 @@ using FluentValidation;
 using FluentValidation.Results;
 using LivroRazao.Aplicacao.Abstracao;
 using LivroRazao.Dominio;
-using LivroRazao.Infraestrutura.Excecoes;
+using LivroRazao.Infraestrutura.Excecao;
 using Microsoft.AspNetCore.Http;
 using Moq;
 using Xunit;

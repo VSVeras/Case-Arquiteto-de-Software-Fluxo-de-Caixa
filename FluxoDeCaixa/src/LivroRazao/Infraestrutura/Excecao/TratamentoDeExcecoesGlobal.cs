@@ -5,7 +5,7 @@ using LivroRazao.Dominio;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 
-namespace LivroRazao.Infraestrutura.Excecoes;
+namespace LivroRazao.Infraestrutura.Excecao;
 public sealed class TratamentoDeExcecoesGlobal(
     IRegistroDeEvento registroDeEvento)
     : IExceptionHandler

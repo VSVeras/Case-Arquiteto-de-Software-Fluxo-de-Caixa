@@ -1,4 +1,4 @@
-using LivroRazao.Infraestrutura.Persistencia.Entidades.Outbox;
+using LivroRazao.Infraestrutura.Persistencia.Entidade.Outbox;
 
 namespace LivroRazao.Aplicacao.Abstracao;
 

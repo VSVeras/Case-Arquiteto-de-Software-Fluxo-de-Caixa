@@ -1,5 +1,5 @@
 using LivroRazao.Dominio.Caixa;
-using LivroRazao.Infraestrutura.Persistencia.Entidades.Outbox;
+using LivroRazao.Infraestrutura.Persistencia.Entidade.Outbox;
 using Microsoft.EntityFrameworkCore;
 
 namespace LivroRazao.Infraestrutura.Persistencia;

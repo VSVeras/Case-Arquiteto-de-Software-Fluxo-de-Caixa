@@ -6,8 +6,8 @@ using LivroRazao.Aplicacao.EventosDeIntegracao;
 using LivroRazao.Aplicacao.Servico;
 using LivroRazao.Aplicacao.Validacao;
 using LivroRazao.Dominio.Caixa;
-using LivroRazao.Infraestrutura.Excecoes;
-using LivroRazao.Infraestrutura.Persistencia.Entidades.Outbox;
+using LivroRazao.Infraestrutura.Excecao;
+using LivroRazao.Infraestrutura.Persistencia.Entidade.Outbox;
 using Moq;
 using Xunit;
 

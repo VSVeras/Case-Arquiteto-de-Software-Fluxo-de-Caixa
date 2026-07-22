@@ -1,4 +1,4 @@
-namespace LivroRazao.Infraestrutura.Excecoes;
+namespace LivroRazao.Infraestrutura.Excecao;
 
 public sealed class ConflitoDePersistenciaException : Exception
 {
