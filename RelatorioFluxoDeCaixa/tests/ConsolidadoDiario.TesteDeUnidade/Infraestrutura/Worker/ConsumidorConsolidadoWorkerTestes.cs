@@ -19,7 +19,8 @@ public sealed class ConsumidorConsolidadoWorkerTestes
     [Fact]
     public async Task DeveConfirmarMensagemProcessada()
     {
-        var processador = new Mock<IProcessadorEventoLancamento>();
+        var processador =
+            new Mock<IProcessadorEventoLancamento>();
 
         processador
             .Setup(x => x.ProcessarAsync(
@@ -27,8 +28,11 @@ public sealed class ConsumidorConsolidadoWorkerTestes
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
 
-        var contexto = CriarContexto(processador.Object);
-        var argumentos = CriarArgumentos(CriarEvento());
+        var contexto =
+            CriarContexto(processador.Object);
+
+        var argumentos =
+            CriarArgumentos(CriarEvento());
 
         await InvocarProcessamentoAsync(
             contexto.Worker,
@@ -36,7 +40,156 @@ public sealed class ConsumidorConsolidadoWorkerTestes
             CancellationToken.None);
 
         contexto.Canal.Verify(
-            x => x.BasicAck(argumentos.DeliveryTag, false),
+            x => x.BasicAck(
+                argumentos.DeliveryTag,
+                false),
+            Times.Once);
+
+        contexto.Canal.Verify(
+            x => x.BasicReject(
+                It.IsAny<ulong>(),
+                It.IsAny<bool>()),
+            Times.Never);
+
+        contexto.Canal.Verify(
+            x => x.BasicNack(
+                It.IsAny<ulong>(),
+                It.IsAny<bool>(),
+                It.IsAny<bool>()),
+            Times.Never);
+
+        contexto.PublicadorRetry.Verify(
+            x => x.Publicar(
+                It.IsAny<IModel>(),
+                It.IsAny<ReadOnlyMemory<byte>>(),
+                It.IsAny<IBasicProperties>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task DeveConfirmarMensagemJaProcessada()
+    {
+        var processador =
+            new Mock<IProcessadorEventoLancamento>();
+
+        processador
+            .Setup(x => x.ProcessarAsync(
+                It.IsAny<EventoDeLancamentoCriado>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
+        var contexto =
+            CriarContexto(processador.Object);
+
+        var argumentos =
+            CriarArgumentos(CriarEvento());
+
+        await InvocarProcessamentoAsync(
+            contexto.Worker,
+            argumentos,
+            CancellationToken.None);
+
+        contexto.Canal.Verify(
+            x => x.BasicAck(
+                argumentos.DeliveryTag,
+                false),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task DeveDescartarMensagemComJsonInvalido()
+    {
+        var contexto =
+            CriarContexto(
+                Mock.Of<IProcessadorEventoLancamento>());
+
+        var argumentos =
+            CriarArgumentos(
+                Encoding.UTF8.GetBytes(
+                    "{ json inválido"));
+
+        await InvocarProcessamentoAsync(
+            contexto.Worker,
+            argumentos,
+            CancellationToken.None);
+
+        contexto.Canal.Verify(
+            x => x.BasicReject(
+                argumentos.DeliveryTag,
+                false),
+            Times.Once);
+
+        contexto.PublicadorRetry.Verify(
+            x => x.Publicar(
+                It.IsAny<IModel>(),
+                It.IsAny<ReadOnlyMemory<byte>>(),
+                It.IsAny<IBasicProperties>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task DeveDescartarEventoComCorrelationIdVazio()
+    {
+        var contexto =
+            CriarContexto(
+                Mock.Of<IProcessadorEventoLancamento>());
+
+        var argumentos =
+            CriarArgumentos(
+                CriarEvento(
+                    correlationId: Guid.Empty));
+
+        await InvocarProcessamentoAsync(
+            contexto.Worker,
+            argumentos,
+            CancellationToken.None);
+
+        contexto.Canal.Verify(
+            x => x.BasicReject(
+                argumentos.DeliveryTag,
+                false),
+            Times.Once);
+
+        contexto.PublicadorRetry.Verify(
+            x => x.Publicar(
+                It.IsAny<IModel>(),
+                It.IsAny<ReadOnlyMemory<byte>>(),
+                It.IsAny<IBasicProperties>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task DeveEnviarParaRetryQuandoPrimeiraTentativaFalhar()
+    {
+        var processador =
+            CriarProcessadorComFalha();
+
+        var contexto =
+            CriarContexto(
+                processador.Object,
+                quantidadeMaximaDeTentativas: 3);
+
+        var argumentos =
+            CriarArgumentos(
+                CriarEvento(),
+                quantidadeDeTentativas: 0);
+
+        await InvocarProcessamentoAsync(
+            contexto.Worker,
+            argumentos,
+            CancellationToken.None);
+
+        contexto.PublicadorRetry.Verify(
+            x => x.Publicar(
+                contexto.Canal.Object,
+                argumentos.Body,
+                argumentos.BasicProperties),
+            Times.Once);
+
+        contexto.Canal.Verify(
+            x => x.BasicAck(
+                argumentos.DeliveryTag,
+                false),
             Times.Once);
 
         contexto.Canal.Verify(
@@ -54,94 +207,120 @@ public sealed class ConsumidorConsolidadoWorkerTestes
     }
 
     [Fact]
-    public async Task DeveConfirmarMensagemJaProcessada()
+    public async Task DeveEnviarParaRetryEnquantoNaoAtingirLimite()
     {
-        var processador = new Mock<IProcessadorEventoLancamento>();
+        var processador =
+            CriarProcessadorComFalha();
 
-        processador
-            .Setup(x => x.ProcessarAsync(
-                It.IsAny<EventoDeLancamentoCriado>(),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(false);
-
-        var contexto = CriarContexto(processador.Object);
-        var argumentos = CriarArgumentos(CriarEvento());
-
-        await InvocarProcessamentoAsync(
-            contexto.Worker,
-            argumentos,
-            CancellationToken.None);
-
-        contexto.Canal.Verify(
-            x => x.BasicAck(argumentos.DeliveryTag, false),
-            Times.Once);
-    }
-
-    [Fact]
-    public async Task DeveDescartarMensagemComJsonInvalido()
-    {
         var contexto =
-            CriarContexto(Mock.Of<IProcessadorEventoLancamento>());
+            CriarContexto(
+                processador.Object,
+                quantidadeMaximaDeTentativas: 3);
 
         var argumentos =
             CriarArgumentos(
-                Encoding.UTF8.GetBytes("{ json inválido"));
+                CriarEvento(),
+                quantidadeDeTentativas: 2);
 
         await InvocarProcessamentoAsync(
             contexto.Worker,
             argumentos,
             CancellationToken.None);
 
-        contexto.Canal.Verify(
-            x => x.BasicReject(argumentos.DeliveryTag, false),
+        contexto.PublicadorRetry.Verify(
+            x => x.Publicar(
+                contexto.Canal.Object,
+                argumentos.Body,
+                argumentos.BasicProperties),
             Times.Once);
-    }
-
-    [Fact]
-    public async Task DeveDescartarEventoComCorrelationIdVazio()
-    {
-        var contexto =
-            CriarContexto(Mock.Of<IProcessadorEventoLancamento>());
-
-        var argumentos =
-            CriarArgumentos(
-                CriarEvento(correlationId: Guid.Empty));
-
-        await InvocarProcessamentoAsync(
-            contexto.Worker,
-            argumentos,
-            CancellationToken.None);
 
         contexto.Canal.Verify(
-            x => x.BasicReject(argumentos.DeliveryTag, false),
-            Times.Once);
-    }
-
-    [Fact]
-    public async Task DeveReenfileirarMensagemQuandoProcessamentoFalhar()
-    {
-        var processador = new Mock<IProcessadorEventoLancamento>();
-
-        processador
-            .Setup(x => x.ProcessarAsync(
-                It.IsAny<EventoDeLancamentoCriado>(),
-                It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new InvalidOperationException("Falha."));
-
-        var contexto = CriarContexto(processador.Object);
-        var argumentos = CriarArgumentos(CriarEvento());
-
-        await InvocarProcessamentoAsync(
-            contexto.Worker,
-            argumentos,
-            CancellationToken.None);
-
-        contexto.Canal.Verify(
-            x => x.BasicNack(
-                10,
-                false,
+            x => x.BasicAck(
+                argumentos.DeliveryTag,
                 false),
             Times.Once);
+
+        contexto.Canal.Verify(
+            x => x.BasicReject(
+                It.IsAny<ulong>(),
+                It.IsAny<bool>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task DeveEnviarParaDlqQuandoAtingirLimiteDeTentativas()
+    {
+        var processador =
+            CriarProcessadorComFalha();
+
+        var contexto =
+            CriarContexto(
+                processador.Object,
+                quantidadeMaximaDeTentativas: 3);
+
+        var argumentos =
+            CriarArgumentos(
+                CriarEvento(),
+                quantidadeDeTentativas: 3);
+
+        await InvocarProcessamentoAsync(
+            contexto.Worker,
+            argumentos,
+            CancellationToken.None);
+
+        contexto.Canal.Verify(
+            x => x.BasicReject(
+                argumentos.DeliveryTag,
+                false),
+            Times.Once);
+
+        contexto.PublicadorRetry.Verify(
+            x => x.Publicar(
+                It.IsAny<IModel>(),
+                It.IsAny<ReadOnlyMemory<byte>>(),
+                It.IsAny<IBasicProperties>()),
+            Times.Never);
+
+        contexto.Canal.Verify(
+            x => x.BasicAck(
+                It.IsAny<ulong>(),
+                It.IsAny<bool>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task DeveConsiderarMaiorContagemDoCabecalhoXDeath()
+    {
+        var processador =
+            CriarProcessadorComFalha();
+
+        var contexto =
+            CriarContexto(
+                processador.Object,
+                quantidadeMaximaDeTentativas: 3);
+
+        var argumentos =
+            CriarArgumentos(
+                CriarEvento(),
+                quantidadesDeTentativas: [1L, 3L]);
+
+        await InvocarProcessamentoAsync(
+            contexto.Worker,
+            argumentos,
+            CancellationToken.None);
+
+        contexto.Canal.Verify(
+            x => x.BasicReject(
+                argumentos.DeliveryTag,
+                false),
+            Times.Once);
+
+        contexto.PublicadorRetry.Verify(
+            x => x.Publicar(
+                It.IsAny<IModel>(),
+                It.IsAny<ReadOnlyMemory<byte>>(),
+                It.IsAny<IBasicProperties>()),
+            Times.Never);
     }
 
     [Fact]
@@ -152,7 +331,8 @@ public sealed class ConsumidorConsolidadoWorkerTestes
 
         cancellationTokenSource.Cancel();
 
-        var processador = new Mock<IProcessadorEventoLancamento>();
+        var processador =
+            new Mock<IProcessadorEventoLancamento>();
 
         processador
             .Setup(x => x.ProcessarAsync(
@@ -162,8 +342,11 @@ public sealed class ConsumidorConsolidadoWorkerTestes
                 new OperationCanceledException(
                     cancellationTokenSource.Token));
 
-        var contexto = CriarContexto(processador.Object);
-        var argumentos = CriarArgumentos(CriarEvento());
+        var contexto =
+            CriarContexto(processador.Object);
+
+        var argumentos =
+            CriarArgumentos(CriarEvento());
 
         await InvocarProcessamentoAsync(
             contexto.Worker,
@@ -176,6 +359,13 @@ public sealed class ConsumidorConsolidadoWorkerTestes
                 false,
                 true),
             Times.Once);
+
+        contexto.PublicadorRetry.Verify(
+            x => x.Publicar(
+                It.IsAny<IModel>(),
+                It.IsAny<ReadOnlyMemory<byte>>(),
+                It.IsAny<IBasicProperties>()),
+            Times.Never);
     }
 
     [Fact]
@@ -201,6 +391,13 @@ public sealed class ConsumidorConsolidadoWorkerTestes
             x => x.ProcessarAsync(
                 It.IsAny<EventoDeLancamentoCriado>(),
                 It.IsAny<CancellationToken>()),
+            Times.Never);
+
+        contexto.PublicadorRetry.Verify(
+            x => x.Publicar(
+                It.IsAny<IModel>(),
+                It.IsAny<ReadOnlyMemory<byte>>(),
+                It.IsAny<IBasicProperties>()),
             Times.Never);
     }
 
@@ -248,7 +445,8 @@ public sealed class ConsumidorConsolidadoWorkerTestes
         string? correlationId,
         string? tipo)
     {
-        var evento = CriarEvento();
+        var evento =
+            CriarEvento();
 
         var contexto =
             CriarContexto(
@@ -270,19 +468,45 @@ public sealed class ConsumidorConsolidadoWorkerTestes
                 argumentos.DeliveryTag,
                 false),
             Times.Once);
+
+        contexto.PublicadorRetry.Verify(
+            x => x.Publicar(
+                It.IsAny<IModel>(),
+                It.IsAny<ReadOnlyMemory<byte>>(),
+                It.IsAny<IBasicProperties>()),
+            Times.Never);
+    }
+
+    private static Mock<IProcessadorEventoLancamento>
+        CriarProcessadorComFalha()
+    {
+        var processador =
+            new Mock<IProcessadorEventoLancamento>();
+
+        processador
+            .Setup(x => x.ProcessarAsync(
+                It.IsAny<EventoDeLancamentoCriado>(),
+                It.IsAny<CancellationToken>()))
+            .ThrowsAsync(
+                new InvalidOperationException("Falha."));
+
+        return processador;
     }
 
     private static ContextoDoWorker CriarContexto(
         IProcessadorEventoLancamento processador,
-        bool canalAberto = true)
+        bool canalAberto = true,
+        int quantidadeMaximaDeTentativas = 3)
     {
-        var canal = new Mock<IModel>();
+        var canal =
+            new Mock<IModel>();
 
         canal
             .SetupGet(x => x.IsOpen)
             .Returns(canalAberto);
 
-        var conexao = new Mock<IConnection>();
+        var conexao =
+            new Mock<IConnection>();
 
         conexao
             .Setup(x => x.CreateModel())
@@ -306,12 +530,24 @@ public sealed class ConsumidorConsolidadoWorkerTestes
         var provedor =
             servicos.BuildServiceProvider();
 
+        var publicadorRetryRabbitMq =
+            new Mock<IPublicadorRetryRabbitMq>();
+
+        var configuracao =
+            new RabbitMqConfiguracao
+            {
+                QuantidadeMaximaDeTentativas =
+                    quantidadeMaximaDeTentativas
+            };
+
         var worker =
             new ConsumidorConsolidadoWorker(
                 rabbitMqConexao.Object,
                 inicializadorRabbitMq.Object,
-                provedor.GetRequiredService<IServiceScopeFactory>(),
-                Options.Create(new RabbitMqConfiguracao()),
+                publicadorRetryRabbitMq.Object,
+                provedor.GetRequiredService<
+                    IServiceScopeFactory>(),
+                Options.Create(configuracao),
                 Mock.Of<IRegistroDeEvento>());
 
         typeof(ConsumidorConsolidadoWorker)
@@ -325,13 +561,16 @@ public sealed class ConsumidorConsolidadoWorkerTestes
 
         return new ContextoDoWorker(
             worker,
-            canal);
+            canal,
+            publicadorRetryRabbitMq);
     }
 
     private static BasicDeliverEventArgs CriarArgumentos(
         EventoDeLancamentoCriado evento,
         string? correlationId = null,
-        string? tipo = null)
+        string? tipo = null,
+        long? quantidadeDeTentativas = null,
+        long[]? quantidadesDeTentativas = null)
     {
         return CriarArgumentos(
             JsonSerializer.SerializeToUtf8Bytes(
@@ -341,13 +580,17 @@ public sealed class ConsumidorConsolidadoWorkerTestes
             correlationId ??
             evento.CorrelationId.ToString(),
             tipo ??
-            evento.TipoEvento);
+            evento.TipoEvento,
+            quantidadeDeTentativas,
+            quantidadesDeTentativas);
     }
 
     private static BasicDeliverEventArgs CriarArgumentos(
         byte[] conteudo,
         string? correlationId = null,
-        string? tipo = null)
+        string? tipo = null,
+        long? quantidadeDeTentativas = null,
+        long[]? quantidadesDeTentativas = null)
     {
         var propriedades =
             new Mock<IBasicProperties>();
@@ -362,11 +605,50 @@ public sealed class ConsumidorConsolidadoWorkerTestes
                 x => x.Type,
                 tipo);
 
+        var headers =
+            CriarHeaders(
+                quantidadeDeTentativas,
+                quantidadesDeTentativas);
+
+        propriedades
+            .SetupGet(x => x.Headers)
+            .Returns(headers);
+
         return new BasicDeliverEventArgs
         {
             DeliveryTag = 10,
             BasicProperties = propriedades.Object,
             Body = conteudo
+        };
+    }
+
+    private static IDictionary<string, object>? CriarHeaders(
+        long? quantidadeDeTentativas,
+        long[]? quantidadesDeTentativas)
+    {
+        var contagens =
+            quantidadesDeTentativas ??
+            (quantidadeDeTentativas.HasValue
+                ? [quantidadeDeTentativas.Value]
+                : []);
+
+        if (contagens.Length == 0)
+        {
+            return null;
+        }
+
+        var xDeath =
+            contagens
+                .Select(quantidade =>
+                    (object)new Dictionary<string, object>
+                    {
+                        ["count"] = quantidade
+                    })
+                .ToList();
+
+        return new Dictionary<string, object>
+        {
+            ["x-death"] = xDeath
         };
     }
 
@@ -422,5 +704,6 @@ public sealed class ConsumidorConsolidadoWorkerTestes
 
     private sealed record ContextoDoWorker(
         ConsumidorConsolidadoWorker Worker,
-        Mock<IModel> Canal);
+        Mock<IModel> Canal,
+        Mock<IPublicadorRetryRabbitMq> PublicadorRetry);
 }

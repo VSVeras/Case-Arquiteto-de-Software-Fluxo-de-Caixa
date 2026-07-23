@@ -39,7 +39,7 @@ public static class InjecaoDeDependencia
         services.AddSingleton<IRabbitMqConexao, RabbitMqConexao>();
         services.AddSingleton<IInicializadorRabbitMq, InicializadorRabbitMq>();
         services.AddSingleton<IRegistroDeEvento, RegistroDeEvento>();
-
+        services.AddSingleton<IPublicadorRetryRabbitMq, PublicadorRetryRabbitMq>();
         services.AddHostedService<ConsumidorConsolidadoWorker>();
 
         services.AddEndpointsApiExplorer();

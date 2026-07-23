@@ -21,7 +21,6 @@
     <Folder Include="Aplicacao\Servico\" />
     <Folder Include="Aplicacao\Validacao\" />
     <Folder Include="Infraestrutura\Excecao\" />
-    <Folder Include="Infraestrutura\Mensageria\" />
     <Folder Include="Infraestrutura\Migracao\" />
     <Folder Include="Infraestrutura\Dao\" />
     <Folder Include="Infraestrutura\Worker\" />
