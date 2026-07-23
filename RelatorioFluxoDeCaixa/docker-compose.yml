@@ -28,7 +28,8 @@ services:
     volumes:
       - ./src/ConsolidadoDiario/Infraestrutura/Migracao:/migrations:ro
     command: >-
-      sh -c "psql -h postgres -U postgres -d relatorio_fluxo_de_caixa
+      sh -c "psql -h postgres -U postgres
+      -d relatorio_fluxo_de_caixa
       -v ON_ERROR_STOP=1
       -f /migrations/001_criar_estrutura_inicial.sql"
     depends_on:
@@ -52,8 +53,8 @@ services:
       RabbitMq__Usuario: guest
       RabbitMq__Senha: guest
       RabbitMq__VirtualHost: /
-      RabbitMq__Exchange: fluxocaixa.exchange
-      RabbitMq__RoutingKeyLancamentoCriado: fluxocaixa.lancamento.criado
+      RabbitMq__Exchange: fluxocaixa.eventos
+      RabbitMq__RoutingKeyLancamentoCriado: lancamento.criado
       RabbitMq__FilaLancamentoCriado: fluxocaixa.lancamento.criado
       RabbitMq__QuantidadeDeMensagensEmProcessamento: 1
 

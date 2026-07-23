@@ -12,15 +12,20 @@ namespace LivroRazao.TesteDeUnidade.Infraestrutura;
 public sealed class RabbitMqTestes
 {
     [Fact]
-    public void InicializadorDeveDeclararTopologia()
+    public void InicializadorDeveDeclararTopologiaComDeadLetterQueue()
     {
         var canal = new Mock<IModel>();
         var conexao = new Mock<IConnection>();
         var fabricaDeConexao = new Mock<IRabbitMqConexao>();
         var configuracao = CriarConfiguracao();
 
-        conexao.Setup(x => x.CreateModel()).Returns(canal.Object);
-        fabricaDeConexao.Setup(x => x.ObterConexao()).Returns(conexao.Object);
+        conexao
+            .Setup(x => x.CreateModel())
+            .Returns(canal.Object);
+
+        fabricaDeConexao
+            .Setup(x => x.ObterConexao())
+            .Returns(conexao.Object);
 
         var inicializador = new InicializadorRabbitMq(
             fabricaDeConexao.Object,
@@ -41,12 +46,58 @@ public sealed class RabbitMqTestes
             );
 
         canal.Verify(
+            x => x.ExchangeDeclare(
+                configuracao.DeadLetterExchange,
+                ExchangeType.Direct,
+                true,
+                false,
+                null
+                ),
+            Times.Once
+            );
+
+        canal.Verify(
+            x => x.QueueDeclare(
+                configuracao.FilaLancamentoCriadoDlq,
+                true,
+                false,
+                false,
+                null
+                ),
+            Times.Once
+            );
+
+        canal.Verify(
+            x => x.QueueBind(
+                configuracao.FilaLancamentoCriadoDlq,
+                configuracao.DeadLetterExchange,
+                configuracao.RoutingKeyLancamentoCriadoDlq,
+                null
+                ),
+            Times.Once
+            );
+
+        canal.Verify(
             x => x.QueueDeclare(
                 configuracao.FilaLancamentoCriado,
                 true,
                 false,
                 false,
-                null
+                It.Is<IDictionary<string, object>>(
+                    argumentos =>
+                        argumentos.Count == 2
+                        && argumentos[
+                            "x-dead-letter-exchange"
+                            ].Equals(
+                                configuracao.DeadLetterExchange
+                                )
+                        && argumentos[
+                            "x-dead-letter-routing-key"
+                            ].Equals(
+                                configuracao
+                                    .RoutingKeyLancamentoCriadoDlq
+                                )
+                    )
                 ),
             Times.Once
             );
@@ -72,9 +123,17 @@ public sealed class RabbitMqTestes
         var configuracao = CriarConfiguracao();
         var correlationId = Guid.NewGuid();
 
-        canal.Setup(x => x.CreateBasicProperties()).Returns(propriedades.Object);
-        conexao.Setup(x => x.CreateModel()).Returns(canal.Object);
-        fabricaDeConexao.Setup(x => x.ObterConexao()).Returns(conexao.Object);
+        canal
+            .Setup(x => x.CreateBasicProperties())
+            .Returns(propriedades.Object);
+
+        conexao
+            .Setup(x => x.CreateModel())
+            .Returns(canal.Object);
+
+        fabricaDeConexao
+            .Setup(x => x.ObterConexao())
+            .Returns(conexao.Object);
 
         var publicador = new PublicadorRabbitMq(
             fabricaDeConexao.Object,
@@ -88,24 +147,47 @@ public sealed class RabbitMqTestes
             CancellationToken.None
             );
 
-        propriedades.VerifySet(x => x.Persistent = true);
-        propriedades.VerifySet(x => x.CorrelationId = correlationId.ToString());
-        propriedades.VerifySet(x => x.Type = "EventoTeste");
-        propriedades.VerifySet(x => x.ContentType = "application/json");
+        propriedades.VerifySet(
+            x => x.Persistent = true
+            );
 
-        canal.Verify(x => x.ConfirmSelect(), Times.Once);
+        propriedades.VerifySet(
+            x => x.CorrelationId = correlationId.ToString()
+            );
+
+        propriedades.VerifySet(
+            x => x.Type = "EventoTeste"
+            );
+
+        propriedades.VerifySet(
+            x => x.ContentType = "application/json"
+            );
+
+        canal.Verify(
+            x => x.ConfirmSelect(),
+            Times.Once
+            );
+
         canal.Verify(
             x => x.BasicPublish(
                 configuracao.Exchange,
                 configuracao.RoutingKeyLancamentoCriado,
                 true,
                 propriedades.Object,
-                It.Is<ReadOnlyMemory<byte>>(corpo => Encoding.UTF8.GetString(corpo.ToArray()) == "{}")
+                It.Is<ReadOnlyMemory<byte>>(
+                    corpo =>
+                        Encoding.UTF8.GetString(
+                            corpo.ToArray()
+                            ) == "{}"
+                    )
                 ),
             Times.Once
             );
+
         canal.Verify(
-            x => x.WaitForConfirmsOrDie(TimeSpan.FromSeconds(10)),
+            x => x.WaitForConfirmsOrDie(
+                TimeSpan.FromSeconds(10)
+                ),
             Times.Once
             );
     }
@@ -117,7 +199,10 @@ public sealed class RabbitMqTestes
             Mock.Of<IRabbitMqConexao>(),
             Options.Create(CriarConfiguracao())
             );
-        using var cancelamento = new CancellationTokenSource();
+
+        using var cancelamento =
+            new CancellationTokenSource();
+
         cancelamento.Cancel();
 
         var acao = () => publicador.PublicarAsync(
@@ -127,7 +212,9 @@ public sealed class RabbitMqTestes
             cancelamento.Token
             );
 
-        await acao.Should().ThrowAsync<OperationCanceledException>();
+        await acao
+            .Should()
+            .ThrowAsync<OperationCanceledException>();
     }
 
     [Fact]
@@ -137,19 +224,35 @@ public sealed class RabbitMqTestes
         var conexao = new Mock<IConnection>();
         var fabricaDeConexao = new Mock<IRabbitMqConexao>();
 
-        canal.SetupGet(x => x.IsOpen).Returns(true);
-        conexao.SetupGet(x => x.IsOpen).Returns(true);
-        conexao.Setup(x => x.CreateModel()).Returns(canal.Object);
-        fabricaDeConexao.Setup(x => x.ObterConexao()).Returns(conexao.Object);
+        canal
+            .SetupGet(x => x.IsOpen)
+            .Returns(true);
+
+        conexao
+            .SetupGet(x => x.IsOpen)
+            .Returns(true);
+
+        conexao
+            .Setup(x => x.CreateModel())
+            .Returns(canal.Object);
+
+        fabricaDeConexao
+            .Setup(x => x.ObterConexao())
+            .Returns(conexao.Object);
 
         var healthCheck = new RabbitMqHealthCheck(
             fabricaDeConexao.Object,
             Options.Create(CriarConfiguracao())
             );
 
-        var resultado = await healthCheck.CheckHealthAsync(new HealthCheckContext());
+        var resultado =
+            await healthCheck.CheckHealthAsync(
+                new HealthCheckContext()
+                );
 
-        resultado.Status.Should().Be(HealthStatus.Healthy);
+        resultado.Status
+            .Should()
+            .Be(HealthStatus.Healthy);
     }
 
     [Fact]
@@ -158,17 +261,27 @@ public sealed class RabbitMqTestes
         var conexao = new Mock<IConnection>();
         var fabricaDeConexao = new Mock<IRabbitMqConexao>();
 
-        conexao.SetupGet(x => x.IsOpen).Returns(false);
-        fabricaDeConexao.Setup(x => x.ObterConexao()).Returns(conexao.Object);
+        conexao
+            .SetupGet(x => x.IsOpen)
+            .Returns(false);
+
+        fabricaDeConexao
+            .Setup(x => x.ObterConexao())
+            .Returns(conexao.Object);
 
         var healthCheck = new RabbitMqHealthCheck(
             fabricaDeConexao.Object,
             Options.Create(CriarConfiguracao())
             );
 
-        var resultado = await healthCheck.CheckHealthAsync(new HealthCheckContext());
+        var resultado =
+            await healthCheck.CheckHealthAsync(
+                new HealthCheckContext()
+                );
 
-        resultado.Status.Should().Be(HealthStatus.Unhealthy);
+        resultado.Status
+            .Should()
+            .Be(HealthStatus.Unhealthy);
     }
 
     [Fact]
@@ -178,38 +291,66 @@ public sealed class RabbitMqTestes
         var conexao = new Mock<IConnection>();
         var fabricaDeConexao = new Mock<IRabbitMqConexao>();
 
-        canal.SetupGet(x => x.IsOpen).Returns(false);
-        conexao.SetupGet(x => x.IsOpen).Returns(true);
-        conexao.Setup(x => x.CreateModel()).Returns(canal.Object);
-        fabricaDeConexao.Setup(x => x.ObterConexao()).Returns(conexao.Object);
+        canal
+            .SetupGet(x => x.IsOpen)
+            .Returns(false);
+
+        conexao
+            .SetupGet(x => x.IsOpen)
+            .Returns(true);
+
+        conexao
+            .Setup(x => x.CreateModel())
+            .Returns(canal.Object);
+
+        fabricaDeConexao
+            .Setup(x => x.ObterConexao())
+            .Returns(conexao.Object);
 
         var healthCheck = new RabbitMqHealthCheck(
             fabricaDeConexao.Object,
             Options.Create(CriarConfiguracao())
             );
 
-        var resultado = await healthCheck.CheckHealthAsync(new HealthCheckContext());
+        var resultado =
+            await healthCheck.CheckHealthAsync(
+                new HealthCheckContext()
+                );
 
-        resultado.Status.Should().Be(HealthStatus.Unhealthy);
+        resultado.Status
+            .Should()
+            .Be(HealthStatus.Unhealthy);
     }
 
     [Fact]
     public async Task HealthCheckDeveRetornarNaoSaudavelQuandoOcorrerFalha()
     {
-        var fabricaDeConexao = new Mock<IRabbitMqConexao>();
+        var fabricaDeConexao =
+            new Mock<IRabbitMqConexao>();
+
         fabricaDeConexao
             .Setup(x => x.ObterConexao())
-            .Throws(new InvalidOperationException("Falha."));
+            .Throws(
+                new InvalidOperationException("Falha.")
+                );
 
         var healthCheck = new RabbitMqHealthCheck(
             fabricaDeConexao.Object,
             Options.Create(CriarConfiguracao())
             );
 
-        var resultado = await healthCheck.CheckHealthAsync(new HealthCheckContext());
+        var resultado =
+            await healthCheck.CheckHealthAsync(
+                new HealthCheckContext()
+                );
 
-        resultado.Status.Should().Be(HealthStatus.Unhealthy);
-        resultado.Exception.Should().BeOfType<InvalidOperationException>();
+        resultado.Status
+            .Should()
+            .Be(HealthStatus.Unhealthy);
+
+        resultado.Exception
+            .Should()
+            .BeOfType<InvalidOperationException>();
     }
 
     [Fact]
@@ -219,35 +360,55 @@ public sealed class RabbitMqTestes
             Mock.Of<IRabbitMqConexao>(),
             Options.Create(CriarConfiguracao())
             );
-        using var cancelamento = new CancellationTokenSource();
+
+        using var cancelamento =
+            new CancellationTokenSource();
+
         cancelamento.Cancel();
 
-        var acao = () => healthCheck.CheckHealthAsync(
-            new HealthCheckContext(),
-            cancelamento.Token
-            );
+        var acao = () =>
+            healthCheck.CheckHealthAsync(
+                new HealthCheckContext(),
+                cancelamento.Token
+                );
 
-        await acao.Should().ThrowAsync<OperationCanceledException>();
+        await acao
+            .Should()
+            .ThrowAsync<OperationCanceledException>();
     }
 
     [Fact]
     public void ConexaoDescartadaNaoDevePermitirNovaConexao()
     {
-        var conexao = new RabbitMqConexao(Options.Create(CriarConfiguracao()));
+        var conexao = new RabbitMqConexao(
+            Options.Create(CriarConfiguracao())
+            );
+
         conexao.Dispose();
 
         var acao = () => conexao.ObterConexao();
 
-        acao.Should().Throw<ObjectDisposedException>();
+        acao
+            .Should()
+            .Throw<ObjectDisposedException>();
     }
 
     private static RabbitMqConfiguracao CriarConfiguracao()
     {
         return new RabbitMqConfiguracao
         {
+            Host = "localhost",
+            Porta = 5672,
+            Usuario = "guest",
+            Senha = "guest",
+            VirtualHost = "/",
             Exchange = "exchange.teste",
             RoutingKeyLancamentoCriado = "routing.teste",
-            FilaLancamentoCriado = "fila.teste"
+            FilaLancamentoCriado = "fila.teste",
+            DeadLetterExchange = "exchange.teste.dlx",
+            FilaLancamentoCriadoDlq = "fila.teste.dlq",
+            RoutingKeyLancamentoCriadoDlq =
+                "routing.teste.dlq"
         };
     }
 }

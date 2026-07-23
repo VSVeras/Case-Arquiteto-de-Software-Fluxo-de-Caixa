@@ -22,42 +22,161 @@ public static class InjecaoDeDependencia
     {
         var connectionString =
             configuration.GetConnectionString("LivroRazao")
-            ?? throw new InvalidOperationException("A connection string 'LivroRazao' nao foi configurada.");
+            ?? throw new InvalidOperationException(
+                "A connection string 'LivroRazao' nao foi configurada."
+                );
 
-        services.AddDbContext<LivroRazaoContexto>(options => options.UseNpgsql(connectionString));
+        services.AddDbContext<LivroRazaoContexto>(
+            options => options.UseNpgsql(connectionString)
+            );
 
         services
             .AddOptions<PublicadorOutboxConfiguracao>()
-            .Bind(configuration.GetSection(PublicadorOutboxConfiguracao.Secao))
-            .Validate(configuracao => configuracao.IntervaloEmSegundos > 0, "IntervaloEmSegundos deve ser maior que zero.")
-            .Validate(configuracao => configuracao.LimiteDeTentativas > 0, "LimiteDeTentativas deve ser maior que zero.")
-            .Validate(configuracao => configuracao.TempoLimiteDeProcessamentoEmMinutos > 0, "TempoLimiteDeProcessamentoEmMinutos deve ser maior que zero.")
+            .Bind(
+                configuration.GetSection(
+                    PublicadorOutboxConfiguracao.Secao
+                    )
+                )
+            .Validate(
+                configuracao =>
+                    configuracao.IntervaloEmSegundos > 0,
+                "IntervaloEmSegundos deve ser maior que zero."
+                )
+            .Validate(
+                configuracao =>
+                    configuracao.LimiteDeTentativas > 0,
+                "LimiteDeTentativas deve ser maior que zero."
+                )
+            .Validate(
+                configuracao =>
+                    configuracao.TempoLimiteDeProcessamentoEmMinutos > 0,
+                "TempoLimiteDeProcessamentoEmMinutos deve ser maior que zero."
+                )
             .ValidateOnStart();
 
         services
             .AddOptions<RabbitMqConfiguracao>()
-            .Bind(configuration.GetSection(RabbitMqConfiguracao.Secao))
-            .Validate(configuracao => !string.IsNullOrWhiteSpace(configuracao.Host), "RabbitMq:Host deve ser informado.")
-            .Validate(configuracao => configuracao.Porta > 0, "RabbitMq:Porta deve ser maior que zero.")
-            .Validate(configuracao => !string.IsNullOrWhiteSpace(configuracao.Exchange), "RabbitMq:Exchange deve ser informado.")
-            .Validate(configuracao => !string.IsNullOrWhiteSpace(configuracao.RoutingKeyLancamentoCriado), "RabbitMq:RoutingKeyLancamentoCriado deve ser informado.")
-            .Validate(configuracao => !string.IsNullOrWhiteSpace(configuracao.FilaLancamentoCriado), "RabbitMq:FilaLancamentoCriado deve ser informada.")
+            .Bind(
+                configuration.GetSection(
+                    RabbitMqConfiguracao.Secao
+                    )
+                )
+            .Validate(
+                configuracao =>
+                    !string.IsNullOrWhiteSpace(configuracao.Host),
+                "RabbitMq:Host deve ser informado."
+                )
+            .Validate(
+                configuracao =>
+                    configuracao.Porta > 0,
+                "RabbitMq:Porta deve ser maior que zero."
+                )
+            .Validate(
+                configuracao =>
+                    !string.IsNullOrWhiteSpace(configuracao.Usuario),
+                "RabbitMq:Usuario deve ser informado."
+                )
+            .Validate(
+                configuracao =>
+                    !string.IsNullOrWhiteSpace(configuracao.Senha),
+                "RabbitMq:Senha deve ser informada."
+                )
+            .Validate(
+                configuracao =>
+                    !string.IsNullOrWhiteSpace(configuracao.VirtualHost),
+                "RabbitMq:VirtualHost deve ser informado."
+                )
+            .Validate(
+                configuracao =>
+                    !string.IsNullOrWhiteSpace(configuracao.Exchange),
+                "RabbitMq:Exchange deve ser informado."
+                )
+            .Validate(
+                configuracao =>
+                    !string.IsNullOrWhiteSpace(
+                        configuracao.RoutingKeyLancamentoCriado
+                        ),
+                "RabbitMq:RoutingKeyLancamentoCriado deve ser informado."
+                )
+            .Validate(
+                configuracao =>
+                    !string.IsNullOrWhiteSpace(
+                        configuracao.FilaLancamentoCriado
+                        ),
+                "RabbitMq:FilaLancamentoCriado deve ser informada."
+                )
+            .Validate(
+                configuracao =>
+                    !string.IsNullOrWhiteSpace(
+                        configuracao.DeadLetterExchange
+                        ),
+                "RabbitMq:DeadLetterExchange deve ser informado."
+                )
+            .Validate(
+                configuracao =>
+                    !string.IsNullOrWhiteSpace(
+                        configuracao.FilaLancamentoCriadoDlq
+                        ),
+                "RabbitMq:FilaLancamentoCriadoDlq deve ser informada."
+                )
+            .Validate(
+                configuracao =>
+                    !string.IsNullOrWhiteSpace(
+                        configuracao.RoutingKeyLancamentoCriadoDlq
+                        ),
+                "RabbitMq:RoutingKeyLancamentoCriadoDlq deve ser informada."
+                )
             .ValidateOnStart();
 
-        services.AddValidatorsFromAssemblyContaining<CriarLancamentoValidador>();
+        services.AddValidatorsFromAssemblyContaining<
+            CriarLancamentoValidador
+            >();
 
-        services.AddScoped<IUnidadeDeTrabalho, UnidadeDeTrabalho>();
-        services.AddScoped<ILancamentoRepositorio, LancamentoRepositorio>();
-        services.AddScoped<ILancamentoOutboxRepositorio, LancamentoOutboxRepositorio>();
-        services.AddScoped<ILancamentoServico, LancamentoServico>();
+        services.AddScoped<
+            IUnidadeDeTrabalho,
+            UnidadeDeTrabalho
+            >();
 
-        services.AddSingleton<IRabbitMqConexao, RabbitMqConexao>();
-        services.AddSingleton<IInicializadorRabbitMq, InicializadorRabbitMq>();
-        services.AddSingleton<IPublicadorDeEventos, PublicadorRabbitMq>();
+        services.AddScoped<
+            ILancamentoRepositorio,
+            LancamentoRepositorio
+            >();
 
-        services.AddSingleton<IRegistroDeEvento, RegistroDeEvento>();
+        services.AddScoped<
+            ILancamentoOutboxRepositorio,
+            LancamentoOutboxRepositorio
+            >();
 
-        services.AddScoped<IProcessadorOutbox, ProcessadorOutbox>();
+        services.AddScoped<
+            ILancamentoServico,
+            LancamentoServico
+            >();
+
+        services.AddSingleton<
+            IRabbitMqConexao,
+            RabbitMqConexao
+            >();
+
+        services.AddSingleton<
+            IInicializadorRabbitMq,
+            InicializadorRabbitMq
+            >();
+
+        services.AddSingleton<
+            IPublicadorDeEventos,
+            PublicadorRabbitMq
+            >();
+
+        services.AddSingleton<
+            IRegistroDeEvento,
+            RegistroDeEvento
+            >();
+
+        services.AddScoped<
+            IProcessadorOutbox,
+            ProcessadorOutbox
+            >();
+
         services.AddHostedService<PublicadorOutboxWorker>();
 
         services.AddEndpointsApiExplorer();
@@ -65,7 +184,9 @@ public static class InjecaoDeDependencia
 
         services
             .AddHealthChecks()
-            .AddDbContextCheck<LivroRazaoContexto>("postgresql")
+            .AddDbContextCheck<LivroRazaoContexto>(
+                "postgresql"
+                )
             .AddCheck<RabbitMqHealthCheck>(
                 name: "rabbitmq",
                 failureStatus: HealthStatus.Unhealthy,

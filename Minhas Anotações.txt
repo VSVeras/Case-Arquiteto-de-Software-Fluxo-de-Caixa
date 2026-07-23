@@ -39,6 +39,7 @@ Abrir o Swagger
 
 PostgreSQL
 	docker exec fluxo-caixa-postgres psql -U postgres -d fluxo_de_caixa -c "SELECT NOW();"
+
 	docker exec -it fluxo-caixa-postgres psql -U postgres -d fluxo_de_caixa
 		\dt
 		SELECT * FROM "__EFMigrationsHistory";
@@ -65,5 +66,13 @@ Pare o ambiente sem apagar o volume: docker compose down
 Como testar o retry: 
 	docker compose stop rabbitmq
 	docker compose start rabbitmq
+
+
+UPDATE "TB_LANCAMENTO_OUTBOX"
+SET
+    "STATUS" = 1,
+    "DATA_PUBLICACAO" = NULL,
+    "TENTATIVAS" = 0
+WHERE "ID" = 1;
 
 

@@ -138,9 +138,9 @@ public sealed class ConsumidorConsolidadoWorkerTestes
 
         contexto.Canal.Verify(
             x => x.BasicNack(
-                argumentos.DeliveryTag,
+                10,
                 false,
-                true),
+                false),
             Times.Once);
     }
 

@@ -9,14 +9,21 @@ namespace ConsolidadoDiario.TesteDeUnidade.Infraestrutura.Mensageria;
 public sealed class InicializadorRabbitMqTestes
 {
     [Fact]
-    public void DeveDeclararExchangeFilaEVinculo()
+    public void DeveValidarPassivamenteExchangeEFila()
     {
         var canal = new Mock<IModel>();
         var conexao = new Mock<IConnection>();
-        conexao.Setup(x => x.CreateModel()).Returns(canal.Object);
 
-        var rabbitMqConexao = new Mock<IRabbitMqConexao>();
-        rabbitMqConexao.Setup(x => x.ObterConexao()).Returns(conexao.Object);
+        conexao
+            .Setup(x => x.CreateModel())
+            .Returns(canal.Object);
+
+        var rabbitMqConexao =
+            new Mock<IRabbitMqConexao>();
+
+        rabbitMqConexao
+            .Setup(x => x.ObterConexao())
+            .Returns(conexao.Object);
 
         var configuracao = new RabbitMqConfiguracao
         {
@@ -27,30 +34,60 @@ public sealed class InicializadorRabbitMqTestes
 
         var inicializador = new InicializadorRabbitMq(
             rabbitMqConexao.Object,
-            Options.Create(configuracao));
+            Options.Create(configuracao)
+        );
 
         inicializador.Inicializar();
 
-        canal.Verify(x => x.ExchangeDeclare(
-            "exchange.teste",
-            ExchangeType.Topic,
-            true,
-            false,
-            null), Times.Once);
+        canal.Verify(
+            x => x.ExchangeDeclarePassive(
+                "exchange.teste"
+            ),
+            Times.Once
+        );
 
-        canal.Verify(x => x.QueueDeclare(
-            "fila.teste",
-            true,
-            false,
-            false,
-            null), Times.Once);
+        canal.Verify(
+            x => x.QueueDeclarePassive(
+                "fila.teste"
+            ),
+            Times.Once
+        );
 
-        canal.Verify(x => x.QueueBind(
-            "fila.teste",
-            "exchange.teste",
-            "routing.teste",
-            null), Times.Once);
+        canal.Verify(
+            x => x.ExchangeDeclare(
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<bool>(),
+                It.IsAny<bool>(),
+                It.IsAny<IDictionary<string, object>?>()
+            ),
+            Times.Never
+        );
 
-        canal.Verify(x => x.Dispose(), Times.Once);
+        canal.Verify(
+            x => x.QueueDeclare(
+                It.IsAny<string>(),
+                It.IsAny<bool>(),
+                It.IsAny<bool>(),
+                It.IsAny<bool>(),
+                It.IsAny<IDictionary<string, object>?>()
+            ),
+            Times.Never
+        );
+
+        canal.Verify(
+            x => x.QueueBind(
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<IDictionary<string, object>?>()
+            ),
+            Times.Never
+        );
+
+        canal.Verify(
+            x => x.Dispose(),
+            Times.Once
+        );
     }
 }

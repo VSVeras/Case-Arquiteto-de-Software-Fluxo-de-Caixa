@@ -16,6 +16,14 @@ public sealed class InicializadorRabbitMq(
 
         using var canal = conexao.CreateModel();
 
+        DeclararExchangePrincipal(canal);
+        DeclararDeadLetterExchange(canal);
+        DeclararDeadLetterQueue(canal);
+        DeclararFilaPrincipal(canal);
+    }
+
+    private void DeclararExchangePrincipal(IModel canal)
+    {
         canal.ExchangeDeclare(
             exchange: _configuracao.Exchange,
             type: ExchangeType.Topic,
@@ -23,13 +31,54 @@ public sealed class InicializadorRabbitMq(
             autoDelete: false,
             arguments: null
             );
+    }
+
+    private void DeclararDeadLetterExchange(IModel canal)
+    {
+        canal.ExchangeDeclare(
+            exchange: _configuracao.DeadLetterExchange,
+            type: ExchangeType.Direct,
+            durable: true,
+            autoDelete: false,
+            arguments: null
+            );
+    }
+
+    private void DeclararDeadLetterQueue(IModel canal)
+    {
+        canal.QueueDeclare(
+            queue: _configuracao.FilaLancamentoCriadoDlq,
+            durable: true,
+            exclusive: false,
+            autoDelete: false,
+            arguments: null
+            );
+
+        canal.QueueBind(
+            queue: _configuracao.FilaLancamentoCriadoDlq,
+            exchange: _configuracao.DeadLetterExchange,
+            routingKey: _configuracao.RoutingKeyLancamentoCriadoDlq,
+            arguments: null
+            );
+    }
+
+    private void DeclararFilaPrincipal(IModel canal)
+    {
+        var argumentos = new Dictionary<string, object>
+        {
+            ["x-dead-letter-exchange"] =
+                _configuracao.DeadLetterExchange,
+
+            ["x-dead-letter-routing-key"] =
+                _configuracao.RoutingKeyLancamentoCriadoDlq
+        };
 
         canal.QueueDeclare(
             queue: _configuracao.FilaLancamentoCriado,
             durable: true,
             exclusive: false,
             autoDelete: false,
-            arguments: null
+            arguments: argumentos
             );
 
         canal.QueueBind(

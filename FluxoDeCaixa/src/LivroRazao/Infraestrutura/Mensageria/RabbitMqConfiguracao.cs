@@ -11,5 +11,9 @@ public sealed class RabbitMqConfiguracao
     public string RoutingKeyLancamentoCriado { get; init; } = "fluxocaixa.lancamento.criado";
     public string FilaLancamentoCriado { get; init; } = "fluxocaixa.lancamento.criado";
 
+    public string DeadLetterExchange { get; init; } = "fluxocaixa.eventos.dlx";
+    public string FilaLancamentoCriadoDlq { get; init; } = "fluxocaixa.lancamento.criado.dlq";
+    public string RoutingKeyLancamentoCriadoDlq { get; init; } = "lancamento.criado.dlq";
+
     public const string Secao = "RabbitMq";
 }

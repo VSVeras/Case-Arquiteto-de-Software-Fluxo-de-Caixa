@@ -167,7 +167,7 @@ public sealed class ConsumidorConsolidadoWorker(
 
             if (_canal is { IsOpen: true })
             {
-                _canal.BasicNack(argumentos.DeliveryTag, multiple: false, requeue: true);
+                _canal.BasicNack(argumentos.DeliveryTag, multiple: false, requeue: false);
             }
         }
     }

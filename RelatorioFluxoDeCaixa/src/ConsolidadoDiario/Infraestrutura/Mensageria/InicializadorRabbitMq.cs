@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Options;
-using RabbitMQ.Client;
 
 namespace ConsolidadoDiario.Infraestrutura.Mensageria;
 
@@ -16,24 +15,12 @@ public sealed class InicializadorRabbitMq(
 
         using var canal = conexao.CreateModel();
 
-        canal.ExchangeDeclare(
-            exchange: _configuracao.Exchange,
-            type: ExchangeType.Topic,
-            durable: true,
-            autoDelete: false,
-            arguments: null);
+        canal.ExchangeDeclarePassive(
+            _configuracao.Exchange
+        );
 
-        canal.QueueDeclare(
-            queue: _configuracao.FilaLancamentoCriado,
-            durable: true,
-            exclusive: false,
-            autoDelete: false,
-            arguments: null);
-
-        canal.QueueBind(
-            queue: _configuracao.FilaLancamentoCriado,
-            exchange: _configuracao.Exchange,
-            routingKey: _configuracao.RoutingKeyLancamentoCriado,
-            arguments: null);
+        canal.QueueDeclarePassive(
+            _configuracao.FilaLancamentoCriado
+        );
     }
 }
