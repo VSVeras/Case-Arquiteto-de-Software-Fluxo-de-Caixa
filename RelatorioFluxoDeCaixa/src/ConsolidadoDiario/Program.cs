@@ -7,8 +7,6 @@ builder.Services.AdicionarDependenciasDaAplicacao(builder.Configuration);
 
 var app = builder.Build();
 
-app.InicializarRabbitMq();
-
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

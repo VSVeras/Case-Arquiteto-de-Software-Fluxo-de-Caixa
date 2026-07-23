@@ -19,6 +19,8 @@ public static class InjecaoDeDependencia
             configuration.GetConnectionString("ConsolidadoDiario")
             ?? throw new InvalidOperationException("A connection string 'ConsolidadoDiario' não foi configurada.");
 
+        services.AddSingleton(_ => NpgsqlDataSource.Create(connectionString));
+
         services
             .AddOptions<RabbitMqConfiguracao>()
             .Bind(configuration.GetSection(RabbitMqConfiguracao.Secao))
@@ -29,8 +31,6 @@ public static class InjecaoDeDependencia
             .Validate(configuracao => !string.IsNullOrWhiteSpace(configuracao.FilaLancamentoCriado), "RabbitMq:FilaLancamentoCriado deve ser informada.")
             .Validate(configuracao => configuracao.QuantidadeDeMensagensEmProcessamento > 0, "RabbitMq:QuantidadeDeMensagensEmProcessamento deve ser maior que zero.")
             .ValidateOnStart();
-
-        services.AddSingleton(_ => NpgsqlDataSource.Create(connectionString));
 
         services.AddScoped<IConsolidadoDiarioDao, ConsolidadoDiarioDao>();
         services.AddScoped<IProcessadorEventoLancamento, ProcessadorEventoLancamento>();
