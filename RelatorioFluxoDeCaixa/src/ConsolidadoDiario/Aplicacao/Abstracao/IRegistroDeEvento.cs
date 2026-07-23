@@ -1,5 +1,3 @@
-using System;
-
 namespace ConsolidadoDiario.Aplicacao.Abstracao;
 
 public interface IRegistroDeEvento

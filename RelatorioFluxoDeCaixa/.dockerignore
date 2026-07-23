@@ -1,0 +1,15 @@
+# Build artifacts
+**/bin
+**/obj
+
+# IDE
+.vs/
+.vscode/
+
+# Git
+.git/
+.gitignore
+
+# OS
+.DS_Store
+Thumbs.db

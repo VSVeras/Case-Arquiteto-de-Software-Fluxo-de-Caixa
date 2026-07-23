@@ -11,7 +11,11 @@ services:
     volumes:
       - relatorio_postgres_dados:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d relatorio_fluxo_de_caixa"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U postgres -d relatorio_fluxo_de_caixa"
+        ]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -22,10 +26,11 @@ services:
     environment:
       PGPASSWORD: postgres
     volumes:
-      - ./docker/migrations:/migrations:ro
+      - ./src/ConsolidadoDiario/Infraestrutura/Migracao:/migrations:ro
     command: >-
       sh -c "psql -h postgres -U postgres -d relatorio_fluxo_de_caixa
-      -v ON_ERROR_STOP=1 -f /migrations/001_criar_estrutura_inicial.sql"
+      -v ON_ERROR_STOP=1
+      -f /migrations/001_criar_estrutura_inicial.sql"
     depends_on:
       postgres:
         condition: service_healthy
@@ -50,6 +55,7 @@ services:
       RabbitMq__Exchange: fluxocaixa.exchange
       RabbitMq__RoutingKeyLancamentoCriado: fluxocaixa.lancamento.criado
       RabbitMq__FilaLancamentoCriado: fluxocaixa.lancamento.criado
+      RabbitMq__QuantidadeDeMensagensEmProcessamento: 1
 
     ports:
       - "8081:8080"

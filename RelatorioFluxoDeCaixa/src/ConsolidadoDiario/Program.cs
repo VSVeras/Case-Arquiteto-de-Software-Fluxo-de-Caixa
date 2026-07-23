@@ -1,16 +1,13 @@
+using ConsolidadoDiario.IoC;
+using ConsolidadoDiario.Rest;
+
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-
-var connectionString = builder.Configuration.GetConnectionString("ConsolidadoDiario")
-    ?? throw new InvalidOperationException("A connection string 'ConsolidadoDiario' não foi configurada.");
-
-builder.Services
-    .AddHealthChecks()
-    .AddNpgSql(connectionString, name: "postgresql");
+builder.Services.AdicionarDependenciasDaAplicacao(builder.Configuration);
 
 var app = builder.Build();
+
+app.InicializarRabbitMq();
 
 if (app.Environment.IsDevelopment())
 {
@@ -19,6 +16,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.MapHealthChecks("/health");
+app.MapearRecursosDeConsolidadoDiario();
 
 await app.RunAsync();
 

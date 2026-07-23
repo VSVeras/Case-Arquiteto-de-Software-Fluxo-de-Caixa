@@ -26,4 +26,10 @@
     <ProjectReference Include="..\..\src\ConsolidadoDiario\ConsolidadoDiario.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="..\..\src\ConsolidadoDiario\Infraestrutura\Migracao\001_criar_estrutura_inicial.sql"
+          Link="Infraestrutura\Migracao\001_criar_estrutura_inicial.sql"
+          CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

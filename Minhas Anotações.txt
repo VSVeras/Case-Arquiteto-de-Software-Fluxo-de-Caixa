@@ -1,0 +1,69 @@
+Cobertura: 
+
+dotnet test --collect "XPlat Code Coverage"
+
+dotnet tool install -g dotnet-reportgenerator-globaltool ou baixar https://www.nuget.org/packages/dotnet-reportgenerator-globaltool
+
+reportgenerator -reports:"tests\**\coverage.cobertura.xml" -targetdir:"CoverageReport" -reporttypes:Html
+
+Teste completo do zero
+	Gere a Migration
+		Add-Migration CriarEstruturaInicial -OutputDir Infraestrutura\Migracao
+		Update-Database
+
+	docker compose down -v --remove-orphans
+	docker compose rm -f
+	docker compose build --no-cache
+	docker compose up -d
+	docker compose ps -a
+
+	http://localhost:8080/swagger
+
+	docker compose logs migrations
+
+Reconstruir SUBBIR a imagem: 
+	docker compose down
+	docker compose build
+	docker compose up -d --no-build
+	docker compose ps -a
+
+Reconstruir SUBBIR a imagem: 
+
+	docker compose down
+	docker compose build --no-cache
+	docker compose up -d
+	docker compose logs -f consolidado-diario
+
+Abrir o Swagger
+	http://localhost:8080/swagger
+
+PostgreSQL
+	docker exec fluxo-caixa-postgres psql -U postgres -d fluxo_de_caixa -c "SELECT NOW();"
+	docker exec -it fluxo-caixa-postgres psql -U postgres -d fluxo_de_caixa
+		\dt
+		SELECT * FROM "__EFMigrationsHistory";
+		\q
+
+	docker exec -it relatorio-fluxo-caixa-postgres psql -U postgres -d relatorio_fluxo_de_caixa
+
+
+
+Testar se a migration é idempotente
+	docker compose run --rm migrations
+	docker compose logs migrations
+
+Testar o RabbitMQ
+	http://localhost:15672
+		Usuário: guest
+		Senha: guest
+
+Acompanhar o processamento da Outbox em tempo real
+	docker compose logs -f livro-razao
+
+Pare o ambiente sem apagar o volume: docker compose down
+
+Como testar o retry: 
+	docker compose stop rabbitmq
+	docker compose start rabbitmq
+
+

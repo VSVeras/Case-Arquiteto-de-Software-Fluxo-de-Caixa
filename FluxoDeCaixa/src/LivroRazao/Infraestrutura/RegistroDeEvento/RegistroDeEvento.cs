@@ -2,8 +2,7 @@ using LivroRazao.Aplicacao.Abstracao;
 
 namespace LivroRazao.Infraestrutura.RegistroDeEvento;
 
-public sealed class RegistroDeEvento(ILogger<RegistroDeEvento> logger)
-    : IRegistroDeEvento
+public sealed class RegistroDeEvento(ILogger<RegistroDeEvento> logger) : IRegistroDeEvento
 {
     public void Informacao(string mensagem, params object?[] argumentos)
     {

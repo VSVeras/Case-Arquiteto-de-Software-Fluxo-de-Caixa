@@ -23,7 +23,7 @@
     <Folder Include="Infraestrutura\Excecao\" />
     <Folder Include="Infraestrutura\Mensageria\" />
     <Folder Include="Infraestrutura\Migracao\" />
-    <Folder Include="Infraestrutura\Repositorio\" />
+    <Folder Include="Infraestrutura\Dao\" />
     <Folder Include="Infraestrutura\Worker\" />
     <Folder Include="IoC\" />
     <Folder Include="Rest\" />
