@@ -1,10 +1,12 @@
 using LivroRazao.Aplicacao.Abstracao;
+using LivroRazao.Infraestrutura.Mensageria;
 using Microsoft.Extensions.Options;
 
 namespace LivroRazao.Infraestrutura.Worker;
 
 public class PublicadorOutboxWorker(
     IServiceScopeFactory fabricaDeEscopo,
+    IInicializadorRabbitMq inicializadorRabbitMq,
     IOptions<PublicadorOutboxConfiguracao> opcoes,
     IRegistroDeEvento registroDeEvento)
     : BackgroundService
@@ -15,8 +17,40 @@ public class PublicadorOutboxWorker(
     {
         registroDeEvento.Informacao("Publicador Outbox iniciado.");
 
+        var topologiaInicializada = false;
+
         while (!stoppingToken.IsCancellationRequested)
         {
+            if (!topologiaInicializada)
+            {
+                try
+                {
+                    inicializadorRabbitMq.Inicializar();
+                    topologiaInicializada = true;
+
+                    registroDeEvento.Informacao("Topologia do RabbitMQ inicializada.");
+                }
+                catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+                {
+                    break;
+                }
+                catch (Exception excecao)
+                {
+                    registroDeEvento.Aviso(
+                        excecao,
+                        "RabbitMQ indisponível. Nova tentativa em {IntervaloEmSegundos} segundos.",
+                        _configuracao.IntervaloEmSegundos
+                    );
+
+                    if (!await AguardarNovaTentativaAsync(stoppingToken))
+                    {
+                        break;
+                    }
+
+                    continue;
+                }
+            }
+
             var deveAguardar = false;
 
             try
@@ -24,6 +58,7 @@ public class PublicadorOutboxWorker(
                 using var escopo = fabricaDeEscopo.CreateScope();
 
                 var processador = escopo.ServiceProvider.GetRequiredService<IProcessadorOutbox>();
+
                 var encontrouEvento = await processador.ProcessarProximoAsync(stoppingToken);
 
                 deveAguardar = !encontrouEvento;
@@ -37,7 +72,7 @@ public class PublicadorOutboxWorker(
                 registroDeEvento.Erro(
                     excecao,
                     "Erro não tratado durante o processamento da Outbox."
-                    );
+                );
 
                 deveAguardar = true;
             }
@@ -47,19 +82,27 @@ public class PublicadorOutboxWorker(
                 continue;
             }
 
-            try
-            {
-                await Task.Delay(
-                    TimeSpan.FromSeconds(_configuracao.IntervaloEmSegundos),
-                    stoppingToken
-                    );
-            }
-            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+            if (!await AguardarNovaTentativaAsync(stoppingToken))
             {
                 break;
             }
         }
 
         registroDeEvento.Informacao("Publicador Outbox finalizado.");
+    }
+
+    private async Task<bool> AguardarNovaTentativaAsync(CancellationToken stoppingToken)
+    {
+        try
+        {
+            await Task.Delay(TimeSpan.FromSeconds(_configuracao.IntervaloEmSegundos),stoppingToken
+            );
+
+            return true;
+        }
+        catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+        {
+            return false;
+        }
     }
 }

@@ -12,8 +12,6 @@ builder.Services.AddProblemDetails();
 
 var app = builder.Build();
 
-app.InicializarRabbitMq();
-
 app.UseExceptionHandler();
 
 if (app.Environment.IsDevelopment())
