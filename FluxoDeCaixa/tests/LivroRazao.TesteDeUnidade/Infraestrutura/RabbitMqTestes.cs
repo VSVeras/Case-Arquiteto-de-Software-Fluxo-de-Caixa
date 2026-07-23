@@ -12,7 +12,7 @@ namespace LivroRazao.TesteDeUnidade.Infraestrutura;
 public sealed class RabbitMqTestes
 {
     [Fact]
-    public void InicializadorDeveDeclararTopologiaComDeadLetterQueue()
+    public void InicializadorDeveDeclararTopologiaComRetryQueueEDeadLetterQueue()
     {
         var canal = new Mock<IModel>();
         var conexao = new Mock<IConnection>();
@@ -47,6 +47,17 @@ public sealed class RabbitMqTestes
 
         canal.Verify(
             x => x.ExchangeDeclare(
+                configuracao.RetryExchange,
+                ExchangeType.Direct,
+                true,
+                false,
+                null
+                ),
+            Times.Once
+            );
+
+        canal.Verify(
+            x => x.ExchangeDeclare(
                 configuracao.DeadLetterExchange,
                 ExchangeType.Direct,
                 true,
@@ -72,6 +83,47 @@ public sealed class RabbitMqTestes
                 configuracao.FilaLancamentoCriadoDlq,
                 configuracao.DeadLetterExchange,
                 configuracao.RoutingKeyLancamentoCriadoDlq,
+                null
+                ),
+            Times.Once
+            );
+
+        canal.Verify(
+            x => x.QueueDeclare(
+                configuracao.FilaLancamentoCriadoRetry,
+                true,
+                false,
+                false,
+                It.Is<IDictionary<string, object>>(
+                    argumentos =>
+                        argumentos.Count == 3
+                        && argumentos[
+                            "x-message-ttl"
+                            ].Equals(
+                                configuracao
+                                    .RetryTempoEmMilissegundos
+                                )
+                        && argumentos[
+                            "x-dead-letter-exchange"
+                            ].Equals(
+                                configuracao.Exchange
+                                )
+                        && argumentos[
+                            "x-dead-letter-routing-key"
+                            ].Equals(
+                                configuracao
+                                    .RoutingKeyLancamentoCriado
+                                )
+                    )
+                ),
+            Times.Once
+            );
+
+        canal.Verify(
+            x => x.QueueBind(
+                configuracao.FilaLancamentoCriadoRetry,
+                configuracao.RetryExchange,
+                configuracao.RoutingKeyLancamentoCriadoRetry,
                 null
                 ),
             Times.Once
@@ -402,11 +454,22 @@ public sealed class RabbitMqTestes
             Usuario = "guest",
             Senha = "guest",
             VirtualHost = "/",
+
             Exchange = "exchange.teste",
-            RoutingKeyLancamentoCriado = "routing.teste",
             FilaLancamentoCriado = "fila.teste",
+            RoutingKeyLancamentoCriado =
+                "routing.teste",
+
+            RetryExchange = "exchange.teste.retry",
+            FilaLancamentoCriadoRetry =
+                "fila.teste.retry",
+            RoutingKeyLancamentoCriadoRetry =
+                "routing.teste.retry",
+            RetryTempoEmMilissegundos = 30000,
+
             DeadLetterExchange = "exchange.teste.dlx",
-            FilaLancamentoCriadoDlq = "fila.teste.dlq",
+            FilaLancamentoCriadoDlq =
+                "fila.teste.dlq",
             RoutingKeyLancamentoCriadoDlq =
                 "routing.teste.dlq"
         };

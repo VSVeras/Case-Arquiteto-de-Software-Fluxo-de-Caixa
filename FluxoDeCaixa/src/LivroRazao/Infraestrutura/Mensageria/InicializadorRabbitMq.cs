@@ -17,8 +17,11 @@ public sealed class InicializadorRabbitMq(
         using var canal = conexao.CreateModel();
 
         DeclararExchangePrincipal(canal);
+        DeclararRetryExchange(canal);
         DeclararDeadLetterExchange(canal);
+
         DeclararDeadLetterQueue(canal);
+        DeclararRetryQueue(canal);
         DeclararFilaPrincipal(canal);
     }
 
@@ -27,6 +30,17 @@ public sealed class InicializadorRabbitMq(
         canal.ExchangeDeclare(
             exchange: _configuracao.Exchange,
             type: ExchangeType.Topic,
+            durable: true,
+            autoDelete: false,
+            arguments: null
+            );
+    }
+
+    private void DeclararRetryExchange(IModel canal)
+    {
+        canal.ExchangeDeclare(
+            exchange: _configuracao.RetryExchange,
+            type: ExchangeType.Direct,
             durable: true,
             autoDelete: false,
             arguments: null
@@ -58,6 +72,36 @@ public sealed class InicializadorRabbitMq(
             queue: _configuracao.FilaLancamentoCriadoDlq,
             exchange: _configuracao.DeadLetterExchange,
             routingKey: _configuracao.RoutingKeyLancamentoCriadoDlq,
+            arguments: null
+            );
+    }
+
+    private void DeclararRetryQueue(IModel canal)
+    {
+        var argumentos = new Dictionary<string, object>
+        {
+            ["x-message-ttl"] =
+                _configuracao.RetryTempoEmMilissegundos,
+
+            ["x-dead-letter-exchange"] =
+                _configuracao.Exchange,
+
+            ["x-dead-letter-routing-key"] =
+                _configuracao.RoutingKeyLancamentoCriado
+        };
+
+        canal.QueueDeclare(
+            queue: _configuracao.FilaLancamentoCriadoRetry,
+            durable: true,
+            exclusive: false,
+            autoDelete: false,
+            arguments: argumentos
+            );
+
+        canal.QueueBind(
+            queue: _configuracao.FilaLancamentoCriadoRetry,
+            exchange: _configuracao.RetryExchange,
+            routingKey: _configuracao.RoutingKeyLancamentoCriadoRetry,
             arguments: null
             );
     }
