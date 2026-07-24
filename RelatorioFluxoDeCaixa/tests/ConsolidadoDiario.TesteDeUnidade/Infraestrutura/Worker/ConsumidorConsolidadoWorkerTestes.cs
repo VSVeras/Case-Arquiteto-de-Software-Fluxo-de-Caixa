@@ -289,6 +289,47 @@ public sealed class ConsumidorConsolidadoWorkerTestes
     }
 
     [Fact]
+    public async Task DeveEnviarParaDlqQuandoQuantidadeDeTentativasForMaiorQueLimite()
+    {
+        var processador =
+            CriarProcessadorComFalha();
+
+        var contexto =
+            CriarContexto(
+                processador.Object,
+                quantidadeMaximaDeTentativas: 3);
+
+        var argumentos =
+            CriarArgumentos(
+                CriarEvento(),
+                quantidadeDeTentativas: 4);
+
+        await InvocarProcessamentoAsync(
+            contexto.Worker,
+            argumentos,
+            CancellationToken.None);
+
+        contexto.Canal.Verify(
+            x => x.BasicReject(
+                argumentos.DeliveryTag,
+                false),
+            Times.Once);
+
+        contexto.PublicadorRetry.Verify(
+            x => x.Publicar(
+                It.IsAny<IModel>(),
+                It.IsAny<ReadOnlyMemory<byte>>(),
+                It.IsAny<IBasicProperties>()),
+            Times.Never);
+
+        contexto.Canal.Verify(
+            x => x.BasicAck(
+                It.IsAny<ulong>(),
+                It.IsAny<bool>()),
+            Times.Never);
+    }
+
+    [Fact]
     public async Task DeveConsiderarMaiorContagemDoCabecalhoXDeath()
     {
         var processador =
