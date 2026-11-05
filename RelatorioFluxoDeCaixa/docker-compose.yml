@@ -1,0 +1,93 @@
+# Composicao isolada para desenvolvimento do RelatorioFluxoDeCaixa.
+# Para o ambiente integrado do case, use ../docker-compose.yml.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: relatorio-fluxo-caixa-postgres
+    environment:
+      POSTGRES_DB: relatorio_fluxo_de_caixa
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5440:5432"
+    volumes:
+      - relatorio_postgres_dados:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER} -d relatorio_fluxo_de_caixa"
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: relatorio-fluxo-caixa-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+      RABBITMQ_ERLANG_COOKIE: ${RABBITMQ_ERLANG_COOKIE}
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_dados:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  migrations:
+    image: postgres:16-alpine
+    container_name: relatorio-fluxo-caixa-migrations
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - ./src/ConsolidadoDiario/Infraestrutura/Migracao:/migrations:ro
+    command: >-
+      sh -c "psql -h postgres -U ${POSTGRES_USER}
+      -d relatorio_fluxo_de_caixa
+      -v ON_ERROR_STOP=1
+      -f /migrations/001_criar_estrutura_inicial.sql"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  consolidado-diario:
+    restart: unless-stopped
+    build:
+      context: ..
+      dockerfile: RelatorioFluxoDeCaixa/docker/Dockerfile
+    container_name: consolidado-diario
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      Jwt__Chave: ${JWT_CHAVE}
+      AutenticacaoDesenvolvimento__Usuario: ${AUTENTICACAO_DEV_USUARIO}
+      AutenticacaoDesenvolvimento__Senha: ${AUTENTICACAO_DEV_SENHA}
+      ConnectionStrings__ConsolidadoDiario: Host=postgres;Port=5432;Database=relatorio_fluxo_de_caixa;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+      RabbitMq__Host: rabbitmq
+      RabbitMq__Porta: 5672
+      RabbitMq__Usuario: ${RABBITMQ_USER}
+      RabbitMq__Senha: ${RABBITMQ_PASSWORD}
+      RabbitMq__VirtualHost: /
+      RabbitMq__Exchange: fluxocaixa.eventos
+      RabbitMq__RoutingKey: lancamento.criado
+      RabbitMq__Fila: fluxocaixa.lancamento.criado
+      RabbitMq__QuantidadeDeMensagensEmProcessamento: 5
+    ports:
+      - "8081:8080"
+    depends_on:
+      migrations:
+        condition: service_completed_successfully
+      rabbitmq:
+        condition: service_healthy
+
+volumes:
+  relatorio_postgres_dados:
+  rabbitmq_dados:

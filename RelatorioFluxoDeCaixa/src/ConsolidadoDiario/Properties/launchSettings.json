@@ -1,0 +1,14 @@
+{
+    "profiles": {
+        "ConsolidadoDiario": {
+            "commandName": "Project",
+            "dotnetRunMessages": true,
+            "launchBrowser": true,
+            "launchUrl": "swagger",
+            "environmentVariables": {
+                "ASPNETCORE_ENVIRONMENT": "Development"
+            },
+            "applicationUrl": "https://localhost:62222;http://localhost:62223"
+        }
+    }
+}

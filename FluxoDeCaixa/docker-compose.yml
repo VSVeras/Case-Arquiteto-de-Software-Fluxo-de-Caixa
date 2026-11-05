@@ -1,0 +1,85 @@
+# Composicao isolada para desenvolvimento do FluxoDeCaixa.
+# Para o ambiente integrado do case, use ../docker-compose.yml.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: fluxo-caixa-postgres
+    environment:
+      POSTGRES_DB: fluxo_de_caixa
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_dados:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d fluxo_de_caixa"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: fluxo-caixa-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+      RABBITMQ_ERLANG_COOKIE: ${RABBITMQ_ERLANG_COOKIE}
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_dados:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  migrations:
+    build:
+      # Necessário porque LivroRazao referencia ../BuildingBlocks/src/Seguranca.
+      context: ..
+      dockerfile: FluxoDeCaixa/docker/Dockerfile
+      target: migrations
+    container_name: fluxo-caixa-migrations
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__LivroRazao: Host=postgres;Port=5432;Database=fluxo_de_caixa;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};GSS Encryption Mode=Disable
+      Jwt__Chave: ${JWT_CHAVE}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  livro-razao:
+    restart: unless-stopped
+    build:
+      # Mesmo contexto para disponibilizar FluxoDeCaixa e BuildingBlocks ao Dockerfile.
+      context: ..
+      dockerfile: FluxoDeCaixa/docker/Dockerfile
+      target: runtime
+    container_name: livro-razao
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__LivroRazao: Host=postgres;Port=5432;Database=fluxo_de_caixa;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};GSS Encryption Mode=Disable
+      Jwt__Chave: ${JWT_CHAVE}
+      AutenticacaoDesenvolvimento__Usuario: ${AUTENTICACAO_DEV_USUARIO}
+      AutenticacaoDesenvolvimento__Senha: ${AUTENTICACAO_DEV_SENHA}
+      RabbitMq__Host: rabbitmq
+      RabbitMq__Porta: 5672
+      RabbitMq__Usuario: ${RABBITMQ_USER}
+      RabbitMq__Senha: ${RABBITMQ_PASSWORD}
+    ports:
+      - "8080:8080"
+    depends_on:
+      migrations:
+        condition: service_completed_successfully
+      rabbitmq:
+        condition: service_healthy
+
+volumes:
+  postgres_dados:
+  rabbitmq_dados:

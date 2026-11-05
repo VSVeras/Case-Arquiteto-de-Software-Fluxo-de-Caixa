@@ -1,0 +1,14 @@
+{
+    "profiles": {
+        "LivroRazao": {
+            "commandName": "Project",
+            "dotnetRunMessages": true,
+            "launchBrowser": true,
+            "launchUrl": "swagger",
+            "environmentVariables": {
+                "ASPNETCORE_ENVIRONMENT": "Development"
+            },
+            "applicationUrl": "https://localhost:63332;http://localhost:63333"
+        }
+    }
+}

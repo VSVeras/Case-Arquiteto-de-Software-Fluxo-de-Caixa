@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<RootNamespace>ConsolidadoDiario</RootNamespace>
+		<AssemblyName>ConsolidadoDiario</AssemblyName>
+		<UserSecretsId>5823ae3f-c345-45ae-a0f9-b7342b48f75a</UserSecretsId>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.10.0" />
+		<PackageReference Include="Dapper" Version="2.1.79" />
+		<PackageReference Include="AspNetCore.HealthChecks.NpgSql" Version="9.0.0" />
+		<PackageReference Include="Npgsql" Version="8.0.6" />
+		<PackageReference Include="Swashbuckle.AspNetCore" Version="6.9.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="../../../BuildingBlocks/src/Mensageria/Mensageria.csproj" />
+		<ProjectReference Include="../../../BuildingBlocks/src/Seguranca/Seguranca.csproj" />
+	</ItemGroup>
+
+</Project>
