@@ -22,7 +22,9 @@
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="aWA9KkItoJ96ySu3wuyx-14" edge="1" parent="1" source="aWA9KkItoJ96ySu3wuyx-5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.25;entryY=1;entryDx=0;entryDy=0;" target="aWA9KkItoJ96ySu3wuyx-9" value="Publica com Publisher Confirm">
-          <mxGeometry relative="1" as="geometry" />
+          <mxGeometry relative="1" x="-0.0101" y="9" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
         </mxCell>
         <mxCell id="aWA9KkItoJ96ySu3wuyx-5" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Publicador Outbox Worker&lt;div&gt;Fluxo de Caixa&lt;/div&gt;" vertex="1">
           <mxGeometry height="60" width="150" x="420" y="-1701" as="geometry" />
@@ -45,7 +47,7 @@
           <mxGeometry height="60" width="120" x="1980" y="-1950" as="geometry" />
         </mxCell>
         <mxCell id="aWA9KkItoJ96ySu3wuyx-15" edge="1" parent="1" source="aWA9KkItoJ96ySu3wuyx-9" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="aWA9KkItoJ96ySu3wuyx-13" value="Consome eventos">
-          <mxGeometry relative="1" x="0.4068" y="9" as="geometry">
+          <mxGeometry relative="1" x="0.5146" y="9" as="geometry">
             <mxPoint as="offset" />
           </mxGeometry>
         </mxCell>
